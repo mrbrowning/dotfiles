@@ -47,6 +47,32 @@ function! VimuxSendText(text)
   call VimuxSendKeys('"'.escape(a:text, '"').'"')
 endfunction
 
+function! VimuxCreateAndSend(text)
+  if !exists("g:replType")
+    if &ft == "python"
+      let g:replType = "python"
+    elseif &ft == "clojure"
+      let g:replType = "lein repl"
+    elseif &ft == "scheme"
+      let g:replType = "racket -il readline"
+    elseif &ft == "haskell"
+      let g:replType = "ghci"
+    elseif &ft == "javascript"
+      let g:replType = "node"
+    else
+      let g:replType = input("repl invocation: ", "")
+    endif
+  endif
+
+  if !exists("g:isInitializedPane")
+    call VimuxOpenRunner()
+    call VimuxSendText(g:replType . "\n")
+    let g:isInitializedPane = 1
+  endif
+
+  call VimuxSendText(a:text)
+endfunction
+
 function! VimuxSendKeys(keys)
   if exists("g:VimuxRunnerIndex")
     call system("tmux send-keys -t ".g:VimuxRunnerIndex." ".a:keys)
@@ -186,3 +212,8 @@ endfunction
 function! _VimuxHasRunner(index)
   return match(system("tmux list-"._VimuxRunnerType()."s -a"), a:index.":")
 endfunction
+
+" Key bindings
+
+vmap <C-c><C-c> "ry :call VimuxCreateAndSend(@r)<CR>
+nmap <C-c><C-c> vip <C-c><C-c>
