@@ -2,9 +2,9 @@
 
 cd ~
 if [ "$(uname -s)" == "Darwin" ] ; then
-    ln -s dotfiles/bash/bashrc .bashrc
-else
     ln -s dotfiles/bash/bashrc .profile
+else
+    ln -s dotfiles/bash/bashrc .bashrc
 fi
 
 mkdir -p .ghc
