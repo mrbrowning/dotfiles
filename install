@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+cd ~
+ln -s dotfiles/bash/bashrc .bashrc
+
+mkdir -p .ghc
+cd .ghc
+ln -s ../dotfiles/ghc/ghci.conf ghci.conf
+cd ~
+
+ln -s dotfiles/git/gitconfig .gitconfig
+
+ln -s dotfiles/hg/hgrc .hgrc
+
+ln -s dotfiles/tmux/tmux.conf .tmux.conf
+
+mkdir -p .vim
+ln -s dotfiles/vim/vimrc .vimrc
+cd .vim
+ln -s ../dotfiles/vim/autoload autoload
+ln -s ../dotfiles/vim/colors colors
+ln -s ../dotfiles/vim/ftplugin ftplugin
+ln -s ../dotfiles/vim/bundle bundle
+cd ~

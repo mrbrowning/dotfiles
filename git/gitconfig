@@ -1,0 +1,9 @@
+[user]
+        name = Michael Browning
+        email = mrbrowning@distopia.net
+[core]
+        pager =
+[color]
+        ui = true
+[alias]
+        lg = log --color --graph --pretty=tformat:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
