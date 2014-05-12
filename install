@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 
 cd ~
-ln -s dotfiles/bash/bashrc .bashrc
+if [ "$(uname -s)" == "Darwin" ] ; then
+    ln -s dotfiles/bash/bashrc .bashrc
+else
+    ln -s dotfiles/bash/bashrc .profile
+fi
 
 mkdir -p .ghc
 cd .ghc
