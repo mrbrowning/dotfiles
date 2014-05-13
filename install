@@ -1,28 +1,30 @@
 #!/usr/bin/env bash
 
+DOTFILE_DIR=$(dirname $(readlink --canonicalize --no-newline $0))
+
 cd ~
 if [ "$(uname -s)" == "Darwin" ] ; then
-    ln -s dotfiles/bash/bashrc .profile
+    ln -s $DOTFILE_DIR/bash/bashrc .profile
 else
-    ln -s dotfiles/bash/bashrc .bashrc
+    ln -s $DOTFILE_DIR/bash/bashrc .bashrc
 fi
 
 mkdir -p .ghc
 cd .ghc
-ln -s ../dotfiles/ghc/ghci.conf ghci.conf
+ln -s $DOTFILE_DIR/ghc/ghci.conf ghci.conf
 cd ~
 
-ln -s dotfiles/git/gitconfig .gitconfig
+ln -s $DOTFILE_DIR/git/gitconfig .gitconfig
 
-ln -s dotfiles/hg/hgrc .hgrc
+ln -s $DOTFILE_DIR/hg/hgrc .hgrc
 
-ln -s dotfiles/tmux/tmux.conf .tmux.conf
+ln -s $DOTFILE_DIR/tmux/tmux.conf .tmux.conf
 
 mkdir -p .vim
-ln -s dotfiles/vim/vimrc .vimrc
+ln -s $DOTFILE_DIR/vim/vimrc .vimrc
 cd .vim
-ln -s ../dotfiles/vim/autoload autoload
-ln -s ../dotfiles/vim/colors colors
-ln -s ../dotfiles/vim/ftplugin ftplugin
-ln -s ../dotfiles/vim/bundle bundle
+ln -s $DOTFILE_DIR/vim/autoload autoload
+ln -s $DOTFILE_DIR/vim/colors colors
+ln -s $DOTFILE_DIR/vim/ftplugin ftplugin
+ln -s $DOTFILE_DIR/vim/bundle bundle
 cd ~
