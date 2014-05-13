@@ -10,7 +10,11 @@ else
 fi
 
 mkdir -p .ghc
-cd .ghc
+# ghci doesn't like it if your conf is writable by someone else
+cd $DOTFILE_DIR
+chmod 755 ghc
+chmod 644 ghc/ghci.conf
+cd ~/.ghc
 ln -s $DOTFILE_DIR/ghc/ghci.conf ghci.conf
 cd ~
 
