@@ -29,6 +29,7 @@ ln -s $DOTFILE_DIR/vim/vimrc .vimrc
 cd .vim
 ln -s $DOTFILE_DIR/vim/autoload autoload
 ln -s $DOTFILE_DIR/vim/colors colors
+ln -s $DOTFILE_DIR/vim/ftdetect ftdetect
 ln -s $DOTFILE_DIR/vim/ftplugin ftplugin
 ln -s $DOTFILE_DIR/vim/bundle bundle
 cd ~
