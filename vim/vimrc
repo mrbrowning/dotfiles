@@ -11,6 +11,7 @@ set t_Co=256
 set splitright
 set ofu=syntaxcomplete#Complete
 set ruler
+set incsearch
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Plugin settings
@@ -25,6 +26,7 @@ call pathogen#infect()
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 cmap w!! %!sudo tee > /dev/null %
+cmap <C-n> <CR>n/<C-p>
 
 " Add C-o and C-p to mimic `o and `p without insert mode triggered 
 nnoremap <silent><C-o> :set paste<CR>m`o<Esc>``:set nopaste<CR>
