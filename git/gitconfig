@@ -3,6 +3,7 @@
         email = mrbrowning@distopia.net
 [core]
         pager =
+	editor = vim
 [color]
         ui = true
 [alias]
