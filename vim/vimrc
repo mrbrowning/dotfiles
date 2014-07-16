@@ -8,6 +8,7 @@ filetype plugin indent on
 colorscheme xoria256
 
 set t_Co=256
+set splitbelow
 set splitright
 set ofu=syntaxcomplete#Complete
 set ruler
