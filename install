@@ -19,6 +19,7 @@ ln -s $DOTFILE_DIR/ghc/ghci.conf ghci.conf
 cd ~
 
 ln -s $DOTFILE_DIR/git/gitconfig .gitconfig
+cp -r $DOTFILE_DIR/git/git_template .git_template
 
 ln -s $DOTFILE_DIR/hg/hgrc .hgrc
 
