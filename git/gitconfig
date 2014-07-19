@@ -9,6 +9,6 @@
 [alias]
         lg = log --color --graph --pretty=tformat:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
 [push]
-	default = simple
+	default = tracking
 [init]
 	templatedir = ~/.git_template
