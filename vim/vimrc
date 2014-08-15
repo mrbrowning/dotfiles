@@ -7,12 +7,14 @@ filetype plugin indent on
 
 colorscheme xoria256
 
-set t_Co=256
-set splitbelow
-set splitright
+set cursorline
+set incsearch
+set nopaste
 set ofu=syntaxcomplete#Complete
 set ruler
-set incsearch
+set splitbelow
+set splitright
+set t_Co=256
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Plugin settings
