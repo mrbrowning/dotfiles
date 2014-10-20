@@ -9,6 +9,7 @@ else
     ln -s $DOTFILE_DIR/bash/bashrc .bashrc
     echo ". ~/.bashrc" >> .bash_profile
 fi
+ln -s $DOTFILE_DIR/bash/bash_aliases .bash_aliases
 
 mkdir -p .ghc
 # ghci doesn't like it if your conf is writable by someone else
