@@ -31,6 +31,9 @@ call pathogen#infect()
 cmap w!! %!sudo tee > /dev/null %
 cmap <C-n> <CR>n/<C-p>
 
+nmap <C-m> :TagbarToggle<CR>
+nmap <C-d> :NERDTreeToggle<CR>
+
 " Add C-o and C-p to mimic `o and `p without insert mode triggered 
 nnoremap <silent><C-o> :set paste<CR>m`o<Esc>``:set nopaste<CR>
 nnoremap <silent><C-p> :set paste<CR>m`O<Esc>``:set nopaste<CR>
