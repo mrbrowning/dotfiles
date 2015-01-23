@@ -1,1 +1,10 @@
 alias ls="ls --color=auto"
+
+# Git aliases
+alias dif="git diff"
+alias difn="git diff --name-only"
+alias gcm="git commit"
+alias gco="git checkout"
+alias gp="git push"
+alias gpu="git push --set-upstream"
+alias gs="git status"
