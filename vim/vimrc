@@ -28,11 +28,16 @@ call pathogen#infect()
 " Key bindings
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+let mapleader="-"
+
 cmap w!! %!sudo tee > /dev/null %
 cmap <C-n> <CR>n/<C-p>
 
 nmap <C-m> :TagbarToggle<CR>
 nmap <C-l> :NERDTreeToggle<CR>
+
+nmap <leader>p :tabn<CR>
+nmap <leader>o :tabp<CR>
 
 " Add C-o and C-p to mimic `o and `p without insert mode triggered 
 nnoremap <silent><C-o> :set paste<CR>m`o<Esc>``:set nopaste<CR>
