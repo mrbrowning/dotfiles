@@ -8,6 +8,7 @@ filetype plugin indent on
 colorscheme xoria256
 
 set cursorline
+set foldlevel=99
 set incsearch
 set nopaste
 set ofu=syntaxcomplete#Complete
