@@ -10,6 +10,7 @@ colorscheme xoria256
 set cursorline
 set foldlevel=99
 set incsearch
+set laststatus=2
 set nopaste
 set ofu=syntaxcomplete#Complete
 set ruler
