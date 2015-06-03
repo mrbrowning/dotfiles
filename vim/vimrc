@@ -25,6 +25,7 @@ set t_Co=256
 let vimclojure#ParenRainbow=1
 
 call pathogen#infect()
+let g:neocomplete#enable_at_startup = 1
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Key bindings
