@@ -7,6 +7,7 @@ filetype plugin indent on
 
 colorscheme xoria256
 
+set backspace=2
 set cursorline
 set foldlevel=99
 set incsearch
