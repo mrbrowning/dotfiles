@@ -51,5 +51,3 @@ fi
 # enable color support of ls and also add handy aliases
 export CLICOLOR=1
 export LSCOLORS=ExGxcxdxCxegedabagacad
-
-export PATH=~/bin:$PATH
