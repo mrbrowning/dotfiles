@@ -3,7 +3,7 @@
 dotfile_dir=$(dirname $(readlink --canonicalize --no-newline $0))
 
 backup=true
-if [ "$1" = "-b" ] ; then
+if [ "$1" = "-f" ] ; then
 	backup=false
 fi
 
