@@ -28,7 +28,7 @@ function prompt_user {
 	done
 }
 
-pushd .
+pushd . > /dev/null
 cd ~
 
 ###############################################################################
@@ -93,4 +93,4 @@ if $(prompt_user "Install vim configs?") ; then
 	link_file $dotfile_dir/vim/bundle .vim/bundle
 fi
 
-popd
+popd > /dev/null
