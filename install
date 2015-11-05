@@ -1,38 +1,96 @@
 #!/usr/bin/env bash
 
-DOTFILE_DIR=$(dirname $(readlink --canonicalize --no-newline $0))
+dotfile_dir=$(dirname $(readlink --canonicalize --no-newline $0))
 
-cd ~
-if [ "$(uname -s)" == "Darwin" ] ; then
-    ln -s $DOTFILE_DIR/bash/bashrc .profile
-else
-    ln -s $DOTFILE_DIR/bash/bashrc .bashrc
-    echo ". ~/.bashrc" >> .bash_profile
+backup=true
+if [ "$1" = "-b" ] ; then
+	backup=false
 fi
-ln -s $DOTFILE_DIR/bash/bash_aliases .bash_aliases
 
-mkdir -p .ghc
-# ghci doesn't like it if your conf is writable by someone else
-cd $DOTFILE_DIR
-chmod 755 ghc
-chmod 644 ghc/ghci.conf
-cd ~/.ghc
-ln -s $DOTFILE_DIR/ghc/ghci.conf ghci.conf
+function link_file {
+	local source_file="$1"
+	local target_file="$2"
+	if $backup ; then
+		mv $target_file ${target_file}.old
+	fi
+	ln -s $source_file $target_file
+}
+
+function prompt_user {
+	while true ; do
+		echo
+		read -p "$1 [y/n]:" yn
+		case $yn in
+			[Yy]* ) return 0 ; break ;;
+			[Nn]* ) return 1 ; break ;;
+			* ) echo "Please answer yes or no." ;;
+		esac
+	done
+}
+
+pushd .
 cd ~
 
-ln -s $DOTFILE_DIR/git/gitconfig .gitconfig
-cp -r $DOTFILE_DIR/git/git_template .git_template
+###############################################################################
+# Install bash configs.
+###############################################################################
 
-ln -s $DOTFILE_DIR/hg/hgrc .hgrc
+if $(prompt_user "Install bash configs?") ; then
+	if [ "$(uname -s)" == "Darwin" ] ; then
+	    link_file $dotfile_dir/bash/bashrc .profile
+	else
+	    link_file $dotfile_dir/bash/bashrc .bashrc
+	fi
+	link_file $dotfile_dir/bash/bash_profile .bash_profile
+	link_file $dotfile_dir/bash/bash_aliases .bash_aliases
+fi
 
-ln -s $DOTFILE_DIR/tmux/tmux.conf .tmux.conf
+###############################################################################
+# Install Haskell configs
+###############################################################################
 
-mkdir -p .vim
-ln -s $DOTFILE_DIR/vim/vimrc .vimrc
-cd .vim
-ln -s $DOTFILE_DIR/vim/autoload autoload
-ln -s $DOTFILE_DIR/vim/colors colors
-ln -s $DOTFILE_DIR/vim/ftdetect ftdetect
-ln -s $DOTFILE_DIR/vim/ftplugin ftplugin
-ln -s $DOTFILE_DIR/vim/bundle bundle
-cd ~
+if $(prompt_user "Install Haskell configs?") ; then
+	mkdir -p .ghc
+	link_file $dotfile_dir/ghc/ghci.conf .ghc/ghci.conf
+fi
+
+###############################################################################
+# Install git configs
+###############################################################################
+
+if $(prompt_user "Install git configs?") ; then
+	link_file $dotfile_dir/git/gitconfig .gitconfig
+	cp -r $dotfile_dir/git/git_template .git_template
+fi
+
+###############################################################################
+# Install Mercurial configs
+###############################################################################
+
+if $(prompt_user "Install Mercurial configs?") ; then
+	link_file $dotfile_dir/hg/hgrc .hgrc
+fi
+
+###############################################################################
+# Install tmux configs
+###############################################################################
+
+if $(prompt_user "Install tmux configs?") ; then
+	link_file $dotfile_dir/tmux/tmux.conf .tmux.conf
+fi
+
+###############################################################################
+# Install vim configs
+###############################################################################
+
+if $(prompt_user "Install vim configs?") ; then
+	mkdir -p .vim
+	link_file $dotfile_dir/vim/vimrc .vimrc
+	link_file $dotfile_dir/vim/autoload .vim/autoload
+	link_file $dotfile_dir/vim/colors .vim/colors
+	link_file $dotfile_dir/vim/ftdetect .vim/ftdetect
+	link_file $dotfile_dir/vim/ftplugin .vim/ftplugin
+	link_file $dotfile_dir/vim/bundle .vim/bundle
+fi
+
+popd
