@@ -10,8 +10,8 @@ fi
 function link_file {
 	local source_file="$1"
 	local target_file="$2"
-	if $backup ; then
-		mv $target_file ${target_file}.old
+	if [ $backup = true -a -f $target_file ] ; then
+		mv $target_file ${target_file}.old 2> /dev/null
 	fi
 	ln -s $source_file $target_file
 }
