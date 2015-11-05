@@ -35,7 +35,7 @@ let g:neocomplete#enable_at_startup = 1
 let mapleader="-"
 
 cmap w!! %!sudo tee > /dev/null %
-cmap <C-n> <CR>n/<C-p>
+cnoremap <C-n> <CR>n/<C-p>
 
 nmap <C-m> :TagbarToggle<CR>
 nmap <C-n> :NERDTreeToggle<CR>
@@ -49,5 +49,5 @@ nnoremap <C-k> <C-w>k
 nnoremap <C-l> <C-w>l
 
 " Add C-o and C-p to mimic `o and `p without insert mode triggered 
-nnoremap <silent><C-o> :set paste<CR>m`o<Esc>``:set nopaste<CR>
-nnoremap <silent><C-p> :set paste<CR>m`O<Esc>``:set nopaste<CR>
+nmap <silent><C-o> :set paste<CR>m`o<Esc>``:set nopaste<CR>
+nmap <silent><C-p> :set paste<CR>m`O<Esc>``:set nopaste<CR>
