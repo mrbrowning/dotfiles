@@ -36,11 +36,7 @@ cd ~
 ###############################################################################
 
 if $(prompt_user "Install bash configs?") ; then
-	if [ "$(uname -s)" == "Darwin" ] ; then
-	    link_file $dotfile_dir/bash/bashrc .profile
-	else
-	    link_file $dotfile_dir/bash/bashrc .bashrc
-	fi
+	link_file $dotfile_dir/bash/bashrc .bashrc
 	link_file $dotfile_dir/bash/bash_profile .bash_profile
 	link_file $dotfile_dir/bash/bash_aliases .bash_aliases
 fi
