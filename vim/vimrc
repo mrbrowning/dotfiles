@@ -7,10 +7,12 @@ filetype plugin indent on
 
 colorscheme xoria256
 
+" Delete over line breaks and generally behave sanely.
 set backspace=2
 set cursorline
 set foldlevel=99
 set incsearch
+" Always display status line.
 set laststatus=2
 set nopaste
 set ofu=syntaxcomplete#Complete
@@ -34,7 +36,9 @@ let g:neocomplete#enable_at_startup = 1
 
 let mapleader="-"
 
+" For when you open a file without write permission, but you want to write it.
 cmap w!! %!sudo tee > /dev/null %
+" Go to next search result while in incremental search mode.
 cnoremap <C-n> <CR>n/<C-p>
 
 nmap <C-m> :TagbarToggle<CR>
