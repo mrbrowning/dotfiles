@@ -35,7 +35,7 @@ cd ~
 # Install bash configs.
 ###############################################################################
 
-if $(prompt_user "Install bash configs?") ; then
+if prompt_user "Install bash configs?" ; then
 	link_file $dotfile_dir/bash/bashrc .bashrc
 	link_file $dotfile_dir/bash/bash_profile .bash_profile
 	link_file $dotfile_dir/bash/bash_aliases .bash_aliases
@@ -45,7 +45,7 @@ fi
 # Install Haskell configs
 ###############################################################################
 
-if $(prompt_user "Install Haskell configs?") ; then
+if prompt_user "Install Haskell configs?" ; then
 	mkdir -p .ghc
 	link_file $dotfile_dir/ghc/ghci.conf .ghc/ghci.conf
 fi
@@ -54,7 +54,7 @@ fi
 # Install git configs
 ###############################################################################
 
-if $(prompt_user "Install git configs?") ; then
+if prompt_user "Install git configs?" ; then
 	link_file $dotfile_dir/git/gitconfig .gitconfig
 	cp -r $dotfile_dir/git/git_template .git_template
 fi
@@ -63,7 +63,7 @@ fi
 # Install Mercurial configs
 ###############################################################################
 
-if $(prompt_user "Install Mercurial configs?") ; then
+if prompt_user "Install Mercurial configs?" ; then
 	link_file $dotfile_dir/hg/hgrc .hgrc
 fi
 
@@ -71,7 +71,7 @@ fi
 # Install tmux configs
 ###############################################################################
 
-if $(prompt_user "Install tmux configs?") ; then
+if prompt_user "Install tmux configs?" ; then
 	link_file $dotfile_dir/tmux/tmux.conf .tmux.conf
 fi
 
@@ -79,7 +79,7 @@ fi
 # Install vim configs
 ###############################################################################
 
-if $(prompt_user "Install vim configs?") ; then
+if prompt_user "Install vim configs?" ; then
 	mkdir -p .vim
 	link_file $dotfile_dir/vim/vimrc .vimrc
 	link_file $dotfile_dir/vim/autoload .vim/autoload
