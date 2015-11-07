@@ -11,6 +11,7 @@ colorscheme xoria256
 set backspace=2
 set cursorline
 set foldlevel=99
+set foldmethod=syntax
 set incsearch
 " Always display status line.
 set laststatus=2
@@ -24,8 +25,6 @@ set t_Co=256
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Plugin settings
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-let vimclojure#ParenRainbow=1
 
 call pathogen#infect()
 let g:neocomplete#enable_at_startup = 1
