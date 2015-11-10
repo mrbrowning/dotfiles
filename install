@@ -18,7 +18,6 @@ function link_file {
 
 function prompt_user {
 	while true ; do
-		echo
 		read -p "$1 [y/n]:" yn
 		case $yn in
 			[Yy]* ) return 0 ; break ;;
@@ -26,6 +25,20 @@ function prompt_user {
 			* ) echo "Please answer yes or no." ;;
 		esac
 	done
+}
+
+function get_user_data {
+	local input_type="$1"
+	local input_value
+	while true ; do
+		read -p "Enter your $input_type: " input_value
+		if [ "$input_value" ] ; then
+			break
+		else
+			>&2 echo "Please supply your $input_type."
+		fi
+	done
+	echo "$input_value"
 }
 
 pushd . > /dev/null
@@ -57,6 +70,8 @@ fi
 if prompt_user "Install git configs?" ; then
 	link_file $dotfile_dir/git/gitconfig .gitconfig
 	cp -r $dotfile_dir/git/git_template .git_template
+	git config --global user.name "$(get_user_data name)"
+	git config --global user.email "$(get_user_data email)"
 fi
 
 ###############################################################################
