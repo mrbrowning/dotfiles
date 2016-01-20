@@ -19,7 +19,7 @@ function link_file {
 function prompt_user {
 	while true ; do
 		read -p "$1 [y/n]:" yn
-		case $yn in
+		case "$yn" in
 			[Yy]* ) return 0 ; break ;;
 			[Nn]* ) return 1 ; break ;;
 			* ) echo "Please answer yes or no." ;;
