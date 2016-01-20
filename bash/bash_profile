@@ -1,1 +1,5 @@
 export PATH=~/bin:$PATH
+
+if [ -t 0 ] ; then
+	. ~/.bashrc
+fi
