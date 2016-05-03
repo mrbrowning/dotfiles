@@ -40,8 +40,11 @@ cmap w!! %!sudo tee > /dev/null %
 " Go to next search result while in incremental search mode.
 cnoremap <C-n> <CR>n/<C-p>
 
-nmap <C-m> :TagbarToggle<CR>
-nmap <C-n> :NERDTreeToggle<CR>
+" Tagbar shortcuts
+nmap <silent><C-m> :TagbarToggle<CR>
+nmap <silent><C-x> :TagbarOpen j<CR>
+
+nmap <silent><C-n> :NERDTreeToggle<CR>
 
 nmap <leader>p :tabn<CR>
 nmap <leader>o :tabp<CR>
@@ -54,3 +57,6 @@ nnoremap <C-l> <C-w>l
 " Add C-o and C-p to mimic `o and `p without insert mode triggered 
 nmap <silent><C-o> :set paste<CR>m`o<Esc>``:set nopaste<CR>
 nmap <silent><C-p> :set paste<CR>m`O<Esc>``:set nopaste<CR>
+
+" Go to tag definition in a vertical tab.
+nnoremap <silent><C-]> :vsp<CR><C-]>
