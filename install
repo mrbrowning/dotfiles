@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
 
-dotfile_dir="$(dirname $(readlink --canonicalize --no-newline $0))"
+set -euo pipefail
 
-backup=true
-if [ "$1" = "-f" ] ; then
-	backup=false
-fi
+dotfile_dir="$(dirname $(readlink --canonicalize --no-newline $0))"
 
 link_file() {
 	local source_file="$1"
 	local target_file="$2"
-	if [ $backup = true -a -f "$target_file" ] ; then
+    local backup="$3"
+
+    if [ -z "$backup" ] ; then
+        backup=false
+    fi
+
+	if "$backup" && [ -f "$target_file" ] ; then
 		mv "$target_file" "${target_file}".old
 	fi
 	ln -s "$source_file" "$target_file"
@@ -41,67 +44,176 @@ get_user_data() {
 	echo "$input_value"
 }
 
-pushd . > /dev/null
-cd ~
+install_bash() {(
+    local backup="$1"
 
-###############################################################################
-# Install bash configs.
-###############################################################################
+    cd ~
 
-if prompt_user "Install bash configs?" ; then
-	link_file "$dotfile_dir"/bash/bashrc .bashrc
-	link_file "$dotfile_dir"/bash/bash_profile .bash_profile
-	link_file "$dotfile_dir"/bash/bash_aliases .bash_aliases
-fi
+    link_file "$dotfile_dir"/bash/bashrc .bashrc "$backup"
+    link_file "$dotfile_dir"/bash/bash_profile .bash_profile "$backup"
+    link_file "$dotfile_dir"/bash/bash_aliases .bash_aliases "$backup"
+)}
 
-###############################################################################
-# Install Haskell configs
-###############################################################################
+install_haskell() {(
+    local backup="$1"
 
-if prompt_user "Install Haskell configs?" ; then
-	mkdir -p .ghc
-	link_file "$dotfile_dir"/ghc/ghci.conf .ghc/ghci.conf
-fi
+    cd ~
 
-###############################################################################
-# Install git configs
-###############################################################################
+    mkdir -p .ghc
+    link_file "$dotfile_dir"/ghc/ghci.conf .ghc/ghci.conf "$backup"
+)}
 
-if prompt_user "Install git configs?" ; then
-	link_file "$dotfile_dir"/git/gitconfig .gitconfig
-	cp -r "$dotfile_dir"/git/git_template .git_template
-	git config --global user.name "$(get_user_data name)"
-	git config --global user.email "$(get_user_data email)"
-fi
+install_git() {(
+    local backup="$1"
 
-###############################################################################
-# Install Mercurial configs
-###############################################################################
+    local author_name=
+    local author_email=
+    if [ "$2" ] ; then
+        author_name="$2"
+        author_email="$3"
+    else
+        author_name="$(get_user_data name)"
+        author_email="$(get_user_data email)"
+    fi
 
-if prompt_user "Install Mercurial configs?" ; then
-	link_file "$dotfile_dir"/hg/hgrc .hgrc
-fi
+    cd ~
 
-###############################################################################
-# Install tmux configs
-###############################################################################
+    link_file "$dotfile_dir"/git/gitconfig .gitconfig "$backup"
+    cp -r "$dotfile_dir"/git/git_template .git_template
 
-if prompt_user "Install tmux configs?" ; then
-	link_file "$dotfile_dir"/tmux/tmux.conf .tmux.conf
-fi
+    git config --global user.name "$author_name"
+    git config --global user.email "$author_email"
+)}
 
-###############################################################################
-# Install vim configs
-###############################################################################
+install_tmux() {(
+    local backup="$1"
 
-if prompt_user "Install vim configs?" ; then
-	mkdir -p .vim
-	link_file "$dotfile_dir"/vim/vimrc .vimrc
-	link_file "$dotfile_dir"/vim/autoload .vim/autoload
-	link_file "$dotfile_dir"/vim/colors .vim/colors
-	link_file "$dotfile_dir"/vim/ftdetect .vim/ftdetect
-	link_file "$dotfile_dir"/vim/ftplugin .vim/ftplugin
-	link_file "$dotfile_dir"/vim/bundle .vim/bundle
-fi
+    cd ~
 
-popd > /dev/null
+    link_file "$dotfile_dir"/tmux/tmux.conf .tmux.conf "$backup"
+)}
+
+install_vim() {(
+    local backup="$1"
+
+    cd ~
+
+    mkdir -p .vim
+    link_file "$dotfile_dir"/vim/vimrc .vimrc "$backup"
+    link_file "$dotfile_dir"/vim/autoload .vim/autoload "$backup"
+    link_file "$dotfile_dir"/vim/colors .vim/colors "$backup"
+    link_file "$dotfile_dir"/vim/ftdetect .vim/ftdetect "$backup"
+    link_file "$dotfile_dir"/vim/ftplugin .vim/ftplugin "$backup"
+    link_file "$dotfile_dir"/vim/bundle .vim/bundle "$backup"
+)}
+
+has() {
+    if ! [ $# -gt 1 ] ; then
+        false
+    fi
+
+    local needle="$1"
+    local found=false
+    shift 1
+
+    while [ $# -gt 0 ]; do
+        item="$1"
+        if [ "$item" == "$needle" ] ; then
+            found=true
+        fi
+        shift 1
+    done
+
+    $found
+}
+
+main() {
+    local backup=true
+    local noprompt=false
+    local author_name=
+    local author_email=
+    local modules=
+
+    while [ $# -gt 0 ] ; do
+        case "$1" in
+            "-f" )
+                backup=false
+                shift 1 ;;
+            "-y" )
+                noprompt=true
+                shift 1 ;;
+            "--name" )
+                author_name="$2"
+                shift 2 ;;
+            "--email" )
+                author_email="$2"
+                shift 2;;
+            "--bash" )
+                modules="${modules}bash "
+                shift 1 ;;
+            "--haskell" )
+                modules="${modules}haskell "
+                shift 1 ;;
+            "--git" )
+                modules="${modules}git "
+                shift 1 ;;
+            "--tmux" )
+                modules="${modules}tmux "
+                shift 1 ;;
+            "--vim" )
+                modules="${modules}vim "
+                shift 1 ;;
+            * )
+                echo "illegal flag: $1"
+                usage
+                exit 1 ;;
+        esac
+    done
+
+    if "$noprompt" ; then
+        if [ -z "$modules" ] ; then
+            echo "If -y enabled, you must specify modules to install"
+            usage
+            exit 2
+        fi
+
+        if [ -z "$author_name" -o -z "$author_email" ] && has "git" $modules
+        then
+            echo "Must provide author name/email if installing git"
+            usage
+            exit 3
+        fi
+
+        for m in $modules ; do
+            case "$m" in
+                "bash" ) install_bash "$backup" ;;
+                "haskell" ) install_haskell "$backup" ;;
+                "git" ) install_git "$backup" "$author_name" "$author_email" ;;
+                "tmux" ) install_tmux "$backup" ;;
+                "vim" ) install_vim "$backup" ;;
+            esac
+        done
+    else
+        if [ "$modules" ] ; then
+            echo "If -y not enabled, you must not specify modules to install"
+            usage
+            exit 4
+        fi
+
+        for m in bash haskell git tmux vim ; do
+            if prompt_user "Install $m configs?" ; then
+                "install_${m}" "$backup"
+            fi
+        done
+    fi
+}
+
+usage() {
+    echo "usage: $0 [--name AUTHOR_NAME] [--email AUTHOR_EMAIL] [-f] [-y]"
+    echo "[--bash] [--haskell] [--git] [--tmux] [--vim]"
+}
+
+case "$1" in
+    -h|--help ) usage ;;
+    * ) main "$@" ;;
+esac
