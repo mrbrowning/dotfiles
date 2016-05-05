@@ -4,6 +4,40 @@ set -euo pipefail
 
 dotfile_dir="$(dirname $(readlink --canonicalize --no-newline $0))"
 
+get_user_data() {
+	local input_type="$1"
+	local input_value
+	while true ; do
+		read -p "Enter your $input_type: " input_value
+		if [ "$input_value" ] ; then
+			break
+		else
+			>&2 echo "Please supply your $input_type."
+		fi
+	done
+	echo "$input_value"
+}
+
+has() {
+    if ! [ $# -gt 1 ] ; then
+        false
+    fi
+
+    local needle="$1"
+    local found=false
+    shift 1
+
+    while [ $# -gt 0 ]; do
+        item="$1"
+        if [ "$item" == "$needle" ] ; then
+            found=true
+        fi
+        shift 1
+    done
+
+    $found
+}
+
 link_file() {
 	local source_file="$1"
 	local target_file="$2"
@@ -30,20 +64,6 @@ prompt_user() {
 	done
 }
 
-get_user_data() {
-	local input_type="$1"
-	local input_value
-	while true ; do
-		read -p "Enter your $input_type: " input_value
-		if [ "$input_value" ] ; then
-			break
-		else
-			>&2 echo "Please supply your $input_type."
-		fi
-	done
-	echo "$input_value"
-}
-
 install_bash() {(
     local backup="$1"
 
@@ -68,7 +88,7 @@ install_git() {(
 
     local author_name=
     local author_email=
-    if [ "$2" ] ; then
+    if [ "${2:-}" ] ; then
         author_name="$2"
         author_email="$3"
     else
@@ -106,26 +126,6 @@ install_vim() {(
     link_file "$dotfile_dir"/vim/ftplugin .vim/ftplugin "$backup"
     link_file "$dotfile_dir"/vim/bundle .vim/bundle "$backup"
 )}
-
-has() {
-    if ! [ $# -gt 1 ] ; then
-        false
-    fi
-
-    local needle="$1"
-    local found=false
-    shift 1
-
-    while [ $# -gt 0 ]; do
-        item="$1"
-        if [ "$item" == "$needle" ] ; then
-            found=true
-        fi
-        shift 1
-    done
-
-    $found
-}
 
 main() {
     local backup=true
@@ -213,7 +213,7 @@ usage() {
     echo "[--bash] [--haskell] [--git] [--tmux] [--vim]"
 }
 
-case "$1" in
+case "${1:-}" in
     -h|--help ) usage ;;
     * ) main "$@" ;;
 esac
