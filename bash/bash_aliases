@@ -3,13 +3,3 @@ if [ "$(uname -s)" == "Darwin" ] ; then
 else
     alias ls="ls --color=auto"
 fi
-
-# Git aliases
-alias dif="git diff"
-alias difn="git diff --name-only"
-alias gcm="git commit"
-alias gco="git checkout"
-alias gp="git push"
-alias gpu="git push --set-upstream"
-alias gr="git rebase"
-alias gs="git status"

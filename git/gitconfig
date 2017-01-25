@@ -8,6 +8,15 @@
         ui = true
 [alias]
         lg = log --color --graph --pretty=tformat:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+	cm = commit
+	co = checkout
+	d = git diff
+	dn = diff --name-only
+	p = pull
+	ps = push
+	pu = push --set-upstream
+	r = rebase
+	s = status
 [push]
 	default = tracking
 [init]
