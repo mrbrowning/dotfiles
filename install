@@ -7,7 +7,8 @@ DRY_RUN=false
 BACKUP=true
 
 # The "--canonicalize" flag in readlink isn't available cross-platform, sadly.
-dotfile_dir="$(python -c "import os,sys ; print os.path.realpath(sys.argv[1])" .)"
+script="import os,sys ; print os.path.realpath(sys.argv[1])"
+dotfile_dir="$(python -c "$script" .)"
 
 run() {
     local command_string=
@@ -151,7 +152,7 @@ usage() {
     echo -e "\t-n       Perform a dry run of all effectful operations"
     echo -e "\t-t       Install tmux dotfiles"
     echo -e "\t-v       Install vim dotfiles"
-    echo -e "\t-y       Supply modules to install as options instead of being prompted"
+    echo -e "\t-y       Supply modules with cli options instead of prompt"
 }
 
 main() {
