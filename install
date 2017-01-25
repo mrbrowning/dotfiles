@@ -2,7 +2,8 @@
 
 set -euo pipefail
 
-dotfile_dir="$(dirname $(readlink --canonicalize --no-newline $0))"
+# The "--canonicalize" flag in readlink isn't available cross-platform, sadly.
+dotfile_dir="$(python -c "import os,sys ; print os.path.realpath(sys.argv[1])" .)"
 
 get_user_data() {
 	local input_type="$1"
