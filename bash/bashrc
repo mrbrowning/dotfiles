@@ -2,11 +2,10 @@
 # General settings
 ################################################################################
 
-if [ -f /opt/local/etc/profile.d/bash_completion.sh ]; then
+[ -f /opt/local/etc/profile.d/bash_completion.sh ] && \
     . /opt/local/etc/profile.d/bash_completion.sh
-    source ~/bin/git-completion.bash
-    source ~/bin/mercurial-completion.bash
-fi
+[ -f ~/bin/git-completion.bash ] && . ~/bin/git-completion.bash
+[ -f ~/bin/mercurial-completion.bash ] && . ~/bin/mercurial-completion.bash
 
 if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
