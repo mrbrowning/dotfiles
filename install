@@ -1,9 +1,30 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
+OPTIND=1
+
+DRY_RUN=false
+BACKUP=true
 
 # The "--canonicalize" flag in readlink isn't available cross-platform, sadly.
 dotfile_dir="$(python -c "import os,sys ; print os.path.realpath(sys.argv[1])" .)"
+
+run() {
+    local command_string=
+    for arg in "$@" ; do
+        if echo "$arg" | grep "\s" > /dev/null ; then
+            command_string+="\"$arg\" "
+        else
+            command_string+="$arg "
+        fi
+    done
+
+    if $DRY_RUN ; then
+        echo "$command_string"
+    else
+        eval "$command_string"
+    fi
+}
 
 get_user_data() {
 	local input_type="$1"
@@ -42,16 +63,11 @@ has() {
 link_file() {
 	local source_file="$1"
 	local target_file="$2"
-    local backup="$3"
 
-    if [ -z "$backup" ] ; then
-        backup=false
-    fi
-
-	if "$backup" && [ -f "$target_file" ] ; then
-		mv "$target_file" "${target_file}".old
+	if $BACKUP && [ -f "$target_file" ] ; then
+		run mv "$target_file" "${target_file}".old
 	fi
-	ln -s "$source_file" "$target_file"
+	run ln -s "$source_file" "$target_file"
 }
 
 prompt_user() {
@@ -66,32 +82,29 @@ prompt_user() {
 }
 
 install_bash() {(
-    local backup="$1"
-
+    echo "*** Installing bash dotfiles."
     cd ~
 
-    link_file "$dotfile_dir"/bash/bashrc .bashrc "$backup"
-    link_file "$dotfile_dir"/bash/bash_profile .bash_profile "$backup"
-    link_file "$dotfile_dir"/bash/bash_aliases .bash_aliases "$backup"
+    link_file "$dotfile_dir"/bash/bashrc .bashrc
+    link_file "$dotfile_dir"/bash/bash_profile .bash_profile
+    link_file "$dotfile_dir"/bash/bash_aliases .bash_aliases
 )}
 
 install_haskell() {(
-    local backup="$1"
-
+    echo "*** Installing Haskell dotfiles."
     cd ~
 
-    mkdir -p .ghc
-    link_file "$dotfile_dir"/ghc/ghci.conf .ghc/ghci.conf "$backup"
+    run mkdir -p .ghc
+    link_file "$dotfile_dir"/ghc/ghci.conf .ghc/ghci.conf
 )}
 
 install_git() {(
-    local backup="$1"
-
+    echo "*** Installing git dotfiles."
     local author_name=
     local author_email=
-    if [ "${2:-}" ] ; then
-        author_name="$2"
-        author_email="$3"
+    if [ "${1:-}" ] ; then
+        author_name="$1"
+        author_email="$2"
     else
         author_name="$(get_user_data name)"
         author_email="$(get_user_data email)"
@@ -99,85 +112,81 @@ install_git() {(
 
     cd ~
 
-    link_file "$dotfile_dir"/git/gitconfig .gitconfig "$backup"
-    cp -r "$dotfile_dir"/git/git_template .git_template
+    link_file "$dotfile_dir"/git/gitconfig .gitconfig
+    run cp -r "$dotfile_dir"/git/git_template .git_template
 
-    git config --global user.name "$author_name"
-    git config --global user.email "$author_email"
+    run git config --global user.name "$author_name"
+    run git config --global user.email "$author_email"
 )}
 
 install_tmux() {(
-    local backup="$1"
-
+    echo "*** Installing tmux dotfiles."
     cd ~
 
-    link_file "$dotfile_dir"/tmux/tmux.conf .tmux.conf "$backup"
+    link_file "$dotfile_dir"/tmux/tmux.conf .tmux.conf
 )}
 
 install_vim() {(
-    local backup="$1"
-
+    echo "*** Installing vim dotfiles."
     cd ~
 
-    mkdir -p .vim
-    link_file "$dotfile_dir"/vim/vimrc .vimrc "$backup"
-    link_file "$dotfile_dir"/vim/autoload .vim/autoload "$backup"
-    link_file "$dotfile_dir"/vim/colors .vim/colors "$backup"
-    link_file "$dotfile_dir"/vim/ftdetect .vim/ftdetect "$backup"
-    link_file "$dotfile_dir"/vim/ftplugin .vim/ftplugin "$backup"
-    link_file "$dotfile_dir"/vim/bundle .vim/bundle "$backup"
+    run mkdir -p .vim
+    link_file "$dotfile_dir"/vim/vimrc .vimrc
+    link_file "$dotfile_dir"/vim/autoload .vim/autoload
+    link_file "$dotfile_dir"/vim/colors .vim/colors
+    link_file "$dotfile_dir"/vim/ftdetect .vim/ftdetect
+    link_file "$dotfile_dir"/vim/ftplugin .vim/ftplugin
+    link_file "$dotfile_dir"/vim/bundle .vim/bundle
 )}
 
+usage() {
+    echo "usage: $(basename "$0") [OPTIONS]"
+    echo -e "\t-a name  Git author name"
+    echo -e "\t-b       Install bash dotfiles"
+    echo -e "\t-e email Git author email"
+    echo -e "\t-f       Overwrite current dotfiles without backing up"
+    echo -e "\t-g       Install git dotfiles"
+    echo -e "\t-h       Show this usage message"
+    echo -e "\t-l       Install Haskell dotfiles"
+    echo -e "\t-n       Perform a dry run of all effectful operations"
+    echo -e "\t-t       Install tmux dotfiles"
+    echo -e "\t-v       Install vim dotfiles"
+    echo -e "\t-y       Supply modules to install as options instead of being prompted"
+}
+
 main() {
-    local backup=true
     local noprompt=false
     local author_name=
     local author_email=
     local modules=
 
-    while [ $# -gt 0 ] ; do
-        case "$1" in
-            "-f" )
-                backup=false
-                shift 1 ;;
-            "-y" )
-                noprompt=true
-                shift 1 ;;
-            "--name" )
-                author_name="$2"
-                shift 2 ;;
-            "--email" )
-                author_email="$2"
-                shift 2;;
-            "--bash" )
-                modules="${modules}bash "
-                shift 1 ;;
-            "--haskell" )
-                modules="${modules}haskell "
-                shift 1 ;;
-            "--git" )
-                modules="${modules}git "
-                shift 1 ;;
-            "--tmux" )
-                modules="${modules}tmux "
-                shift 1 ;;
-            "--vim" )
-                modules="${modules}vim "
-                shift 1 ;;
-            * )
-                echo "illegal flag: $1"
+    while getopts "a:be:fghntvy" opt ; do
+        case "$opt" in
+            a )
+                author_name="$OPTARG" ;;
+            b )
+                modules="${modules}bash " ;;
+            e )
+                author_email="$OPTARG" ;;
+            f )
+                BACKUP=false ;;
+            g )
+                modules="${modules}git " ;;
+            h )
                 usage
-                exit 1 ;;
+                exit 0 ;;
+            l )
+                modules="${modules}haskell " ;;
+            n )
+                DRY_RUN=true ;;
+            t )
+                modules="${modules}tmux " ;;
+            v )
+                modules="${modules}vim " ;;
         esac
     done
 
-    if "$noprompt" ; then
-        if [ -z "$modules" ] ; then
-            echo "If -y enabled, you must specify modules to install"
-            usage
-            exit 2
-        fi
-
+    if [ -n "$modules" ] ; then
         if [ -z "$author_name" -o -z "$author_email" ] && has "git" $modules
         then
             echo "Must provide author name/email if installing git"
@@ -187,34 +196,20 @@ main() {
 
         for m in $modules ; do
             case "$m" in
-                "bash" ) install_bash "$backup" ;;
-                "haskell" ) install_haskell "$backup" ;;
-                "git" ) install_git "$backup" "$author_name" "$author_email" ;;
-                "tmux" ) install_tmux "$backup" ;;
-                "vim" ) install_vim "$backup" ;;
+                "bash" ) install_bash ;;
+                "haskell" ) install_haskell ;;
+                "git" ) install_git "$author_name" "$author_email" ;;
+                "tmux" ) install_tmux ;;
+                "vim" ) install_vim ;;
             esac
         done
     else
-        if [ "$modules" ] ; then
-            echo "If -y not enabled, you must not specify modules to install"
-            usage
-            exit 4
-        fi
-
         for m in bash haskell git tmux vim ; do
             if prompt_user "Install $m configs?" ; then
-                "install_${m}" "$backup"
+                "install_${m}"
             fi
         done
     fi
 }
 
-usage() {
-    echo "usage: $0 [--name AUTHOR_NAME] [--email AUTHOR_EMAIL] [-f] [-y]"
-    echo "[--bash] [--haskell] [--git] [--tmux] [--vim]"
-}
-
-case "${1:-}" in
-    -h|--help ) usage ;;
-    * ) main "$@" ;;
-esac
+main "$@"
