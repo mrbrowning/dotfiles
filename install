@@ -41,26 +41,6 @@ get_user_data() {
 	echo "$input_value"
 }
 
-has() {
-    if ! [ $# -gt 1 ] ; then
-        false
-    fi
-
-    local needle="$1"
-    local found=false
-    shift 1
-
-    while [ $# -gt 0 ]; do
-        item="$1"
-        if [ "$item" == "$needle" ] ; then
-            found=true
-        fi
-        shift 1
-    done
-
-    $found
-}
-
 link_file() {
 	local source_file="$1"
 	local target_file="$2"
@@ -152,7 +132,6 @@ usage() {
     echo -e "\t-n       Perform a dry run of all effectful operations"
     echo -e "\t-t       Install tmux dotfiles"
     echo -e "\t-v       Install vim dotfiles"
-    echo -e "\t-y       Supply modules with cli options instead of prompt"
 }
 
 main() {
@@ -161,7 +140,7 @@ main() {
     local author_email=
     local modules=
 
-    while getopts "a:be:fghntvy" opt ; do
+    while getopts "a:be:fghlntvy" opt ; do
         case "$opt" in
             a )
                 author_name="$OPTARG" ;;
@@ -188,8 +167,8 @@ main() {
     done
 
     if [ -n "$modules" ] ; then
-        if [ -z "$author_name" -o -z "$author_email" ] && has "git" $modules
-        then
+        if echo "$modules" | grep git >/dev/null && \
+                [ -z "$author_name" -o -z "$author_email" ] ; then
             echo "Must provide author name/email if installing git"
             usage
             exit 3
