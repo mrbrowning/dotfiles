@@ -43,7 +43,7 @@ cmap w!! %!sudo tee > /dev/null %
 cnoremap <C-n> <CR>n/<C-p>
 
 " Tagbar shortcuts
-nmap <silent><C-m> :TagbarToggle<CR>
+nmap <silent><C-i> :TagbarToggle<CR>
 nmap <silent><C-x> :TagbarOpen j<CR>
 
 nmap <silent><C-n> :NERDTreeToggle<CR>
