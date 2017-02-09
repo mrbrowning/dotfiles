@@ -1,2 +1,1 @@
-let vimclojure#ParenRainbow=1
-let g:neocomplete#disable_auto_complete=1
+nnoremap K :exec 'Doc' expand('<cword>')<CR>
