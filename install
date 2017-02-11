@@ -45,7 +45,7 @@ link_file() {
     local source_file="$1"
     local target_file="$2"
 
-    if $BACKUP && [ -f "$target_file" ] ; then
+    if $BACKUP && [ -f "$target_file" -o -d "$target_file" ] ; then
         run mv "$target_file" "${target_file}".old
     fi
     run ln -s "$source_file" "$target_file"
@@ -69,6 +69,13 @@ install_bash() {(
     link_file "$dotfile_dir"/bash/bashrc .bashrc
     link_file "$dotfile_dir"/bash/bash_profile .bash_profile
     link_file "$dotfile_dir"/bash/bash_aliases .bash_aliases
+)}
+
+install_emacs() {(
+    echo "*** Installing emacs dotfiles (spacemacs)."
+    cd ~
+
+    link_file "$dotfile_dir"/emacs .emacs.d
 )}
 
 install_haskell() {(
@@ -140,7 +147,7 @@ main() {
     local author_email=
     local modules=
 
-    while getopts "a:be:fghlntvy" opt ; do
+    while getopts "a:be:fghlntvx" opt ; do
         case "$opt" in
             a )
                 author_name="$OPTARG" ;;
@@ -163,6 +170,8 @@ main() {
                 modules="${modules}tmux " ;;
             v )
                 modules="${modules}vim " ;;
+            x )
+                modules="${modules}emacs " ;;
         esac
     done
 
@@ -177,6 +186,7 @@ main() {
         for m in $modules ; do
             case "$m" in
                 "bash" ) install_bash ;;
+                "emacs" ) install_emacs ;;
                 "haskell" ) install_haskell ;;
                 "git" ) install_git "$author_name" "$author_email" ;;
                 "tmux" ) install_tmux ;;
