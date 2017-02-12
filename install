@@ -194,7 +194,7 @@ main() {
             esac
         done
     else
-        for m in bash haskell git tmux vim ; do
+        for m in bash emacs haskell git tmux vim ; do
             if prompt_user "Install $m configs?" ; then
                 "install_${m}"
             fi
