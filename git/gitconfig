@@ -1,6 +1,6 @@
 [user]
-        name = Michael Browning
-        email = mrbrowning@distopia.net
+	name = Michael Browning
+	email = michael.browning@saildrone.com
 [core]
         pager =
 	editor = vim
@@ -21,3 +21,5 @@
 	default = tracking
 [init]
 	templatedir = ~/.git_template
+[url "git@github.com:"]
+	insteadOf = https://github.com/

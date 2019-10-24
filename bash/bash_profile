@@ -1,5 +1,11 @@
-export PATH=~/bin:$PATH
+export GOPATH=~/go
+export GOBIN=$GOPATH/bin
+export GO111MODULE=on
+
+export PATH=~/bin:$GOBIN:$PATH
 
 if [ -t 0 ] ; then
 	. ~/.bashrc
 fi
+
+export PATH="$HOME/.cargo/bin:$PATH"

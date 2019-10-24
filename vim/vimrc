@@ -24,6 +24,9 @@ set scrolloff=2
 set splitbelow
 set splitright
 set t_Co=256
+set mouse=a
+
+set directory=~/.swp/
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Plugin settings
