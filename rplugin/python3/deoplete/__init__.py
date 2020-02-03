@@ -4,61 +4,68 @@
 # License: MIT license
 # ============================================================================
 
-from importlib import find_loader
+import typing
+
+from importlib.util import find_spec
 from deoplete.deoplete import Deoplete
+from deoplete.util import Nvim
 
 
-if find_loader('yarp'):
+if find_spec('yarp'):
     import vim
+elif find_spec('pynvim'):
+    import pynvim as vim
 else:
-    import neovim
-    vim = neovim
+    import neovim as vim
 
-if 'neovim' in locals() and hasattr(neovim, 'plugin'):
+Context = typing.Dict[str, typing.Any]
+
+if hasattr(vim, 'plugin'):
     # Neovim only
 
-    @neovim.plugin
+    @vim.plugin
     class DeopleteHandlers(object):
 
-        def __init__(self, vim):
+        def __init__(self, vim: Nvim):
             self._vim = vim
 
-        @neovim.function('_deoplete_init', sync=False)
-        def init_channel(self, args):
+        @vim.function('_deoplete_init', sync=False)  # type: ignore
+        def init_channel(self,
+                         args: typing.List[typing.Any]) -> None:
             self._deoplete = Deoplete(self._vim)
 
-        @neovim.rpc_export('deoplete_enable_logging')
-        def enable_logging(self, context):
+        @vim.rpc_export('deoplete_enable_logging')  # type: ignore
+        def enable_logging(self, context: Context) -> None:
             self._deoplete.enable_logging()
 
-        @neovim.rpc_export('deoplete_auto_completion_begin')
-        def auto_completion_begin(self, context):
+        @vim.rpc_export('deoplete_auto_completion_begin')  # type: ignore
+        def auto_completion_begin(self, context: Context) -> None:
             self._deoplete.completion_begin(context)
 
-        @neovim.rpc_export('deoplete_manual_completion_begin')
-        def manual_completion_begin(self, context):
+        @vim.rpc_export('deoplete_manual_completion_begin')  # type: ignore
+        def manual_completion_begin(self, context: Context) -> None:
             self._deoplete.completion_begin(context)
 
-        @neovim.rpc_export('deoplete_on_event')
-        def on_event(self, context):
+        @vim.rpc_export('deoplete_on_event')  # type: ignore
+        def on_event(self, context: Context) -> None:
             self._deoplete.on_event(context)
 
 
-if find_loader('yarp'):
+if find_spec('yarp'):
 
     global_deoplete = Deoplete(vim)
 
-    def deoplete_init():
+    def deoplete_init() -> None:
         pass
 
-    def deoplete_enable_logging(context):
+    def deoplete_enable_logging(context: Context) -> None:
         global_deoplete.enable_logging()
 
-    def deoplete_auto_completion_begin(context):
+    def deoplete_auto_completion_begin(context: Context) -> None:
         global_deoplete.completion_begin(context)
 
-    def deoplete_manual_completion_begin(context):
+    def deoplete_manual_completion_begin(context: Context) -> None:
         global_deoplete.completion_begin(context)
 
-    def deoplete_on_event(context):
+    def deoplete_on_event(context: Context) -> None:
         global_deoplete.on_event(context)
