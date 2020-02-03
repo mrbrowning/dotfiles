@@ -35,36 +35,31 @@ function! deoplete#util#get_input(event) abort
         \         '^.*\%' . (mode ==# 'i' ? col('.') : col('.') - 1)
         \         . 'c' . (mode ==# 'i' ? '' : '.'))
 
-  if input =~# '^.\{-}\ze\S\+$'
-    let complete_str = matchstr(input, '\S\+$')
-    let input = matchstr(input, '^.\{-}\ze\S\+$')
-  else
-    let complete_str = ''
-  endif
-
   if a:event ==# 'InsertCharPre'
-    let complete_str .= v:char
+    let input .= v:char
   endif
 
-  return input . complete_str
+  return input
 endfunction
 function! deoplete#util#get_next_input(event) abort
   return getline('.')[len(deoplete#util#get_input(a:event)) :]
 endfunction
-function! deoplete#util#get_prev_event() abort
-  return get(g:deoplete#_context, 'event', '')
-endfunction
 
 function! deoplete#util#vimoption2python(option) abort
-  return '[a-zA-Z' . s:vimoption2python(a:option) . ']'
+  return '[\w' . s:vimoption2python(a:option) . ']'
 endfunction
 function! deoplete#util#vimoption2python_not(option) abort
-  return '[^a-zA-Z' . s:vimoption2python(a:option) . ']'
+  return '[^\w' . s:vimoption2python(a:option) . ']'
 endfunction
 function! s:vimoption2python(option) abort
   let has_dash = 0
   let patterns = []
   for pattern in split(a:option, ',')
+    if pattern =~# '\d\+'
+      let pattern = substitute(pattern, '\d\+',
+            \ '\=nr2char(submatch(0))', 'g')
+    endif
+
     if pattern ==# ''
       " ,
       call add(patterns, ',')
@@ -72,10 +67,14 @@ function! s:vimoption2python(option) abort
       call add(patterns, '\\')
     elseif pattern ==# '-'
       let has_dash = 1
-    elseif pattern =~# '\d\+'
-      call add(patterns, substitute(pattern, '\d\+',
-            \ '\=nr2char(submatch(0))', 'g'))
     else
+      " Avoid ambiguous Python 3 RE syntax for nested sets
+      if pattern =~# '^--'
+        let pattern = '\' . pattern
+      elseif pattern =~# '--$'
+        let pattern = split(pattern, '-')[0] . '-\-'
+      endif
+
       call add(patterns, pattern)
     endif
   endfor
@@ -136,71 +135,40 @@ function! deoplete#util#has_yarp() abort
   return !has('nvim') || deoplete#custom#_get_option('yarp')
 endfunction
 
-function! deoplete#util#get_context_filetype(input, event) abort
-  if !exists('s:context_filetype')
-    let s:context_filetype = {}
-
-    " Force context_filetype call.
-    try
-      call context_filetype#get_filetype()
-    catch
-      " Ignore error
-    endtry
+function! deoplete#util#get_keyword_pattern(filetype) abort
+  let keyword_patterns = deoplete#custom#_get_option('keyword_patterns')
+  if empty(keyword_patterns)
+    let patterns = deoplete#custom#_get_filetype_option(
+        \   'keyword_patterns', a:filetype, '')
+  else
+    let filetype = has_key(keyword_patterns, a:filetype) ? a:filetype : '_'
+    let patterns = get(keyword_patterns, filetype, '')
   endif
+  let pattern = join(deoplete#util#convert2list(patterns), '|')
 
-  if empty(s:context_filetype)
-        \ || s:context_filetype.prev_filetype !=# &filetype
-        \ || s:context_filetype.line != line('.')
-        \ || s:context_filetype.bufnr != bufnr('%')
-        \ || (a:input =~# '\W$' &&
-        \     substitute(a:input, '\s\zs\s\+$', '', '') !=#
-        \     substitute(s:context_filetype.input, '\s\zs\s\+$', '', ''))
-        \ || (a:input =~# '\w$' &&
-        \     substitute(a:input, '\w\+$', '', '') !=#
-        \     substitute(s:context_filetype.input, '\w\+$', '', ''))
-        \ || a:event ==# 'InsertEnter'
-
-    let s:context_filetype.line = line('.')
-    let s:context_filetype.bufnr = bufnr('%')
-    let s:context_filetype.input = a:input
-    let s:context_filetype.prev_filetype = &filetype
-    let s:context_filetype.filetype =
-          \ (exists('*context_filetype#get_filetype') ?
-          \   context_filetype#get_filetype() :
-          \   (&filetype ==# '' ? 'nothing' : &filetype))
-    let s:context_filetype.filetypes =
-          \ exists('*context_filetype#get_filetypes') ?
-          \   context_filetype#get_filetypes() :
-          \   &filetype ==# '' ? ['nothing'] :
-          \                     deoplete#util#uniq([&filetype]
-          \                          + split(&filetype, '\.'))
-    let s:context_filetype.same_filetypes =
-          \ exists('*context_filetype#get_same_filetypes') ?
-          \   context_filetype#get_same_filetypes() : []
-  endif
-  return [ s:context_filetype.filetype,
-        \  s:context_filetype.filetypes, s:context_filetype.same_filetypes]
+  " Convert keyword.
+  let k_pattern = deoplete#util#vimoption2python(
+        \ &l:iskeyword . (&l:lisp ? ',-' : ''))
+  return substitute(pattern, '\\k', '\=k_pattern', 'g')
 endfunction
 
-function! deoplete#util#rpcnotify(event, context) abort
-  if deoplete#init#_check_channel()
+function! deoplete#util#rpcnotify(method, context) abort
+  if !deoplete#init#_channel_initialized()
     return ''
   endif
-  call s:notify(a:event, a:context)
-  return ''
-endfunction
 
-function! s:notify(event, context) abort
-  let a:context['rpc'] = a:event
+  let a:context['rpc'] = a:method
 
   if deoplete#util#has_yarp()
     if g:deoplete#_yarp.job_is_dead
-      return
+      return ''
     endif
-    call g:deoplete#_yarp.notify(a:event, a:context)
+    call g:deoplete#_yarp.notify(a:method, a:context)
   else
-    call rpcnotify(g:deoplete#_channel_id, a:event, a:context)
+    call rpcnotify(g:deoplete#_channel_id, a:method, a:context)
   endif
+
+  return ''
 endfunction
 
 " Compare versions.  Return values is the distance between versions.  Each
@@ -230,4 +198,14 @@ endfunction
 
 function! deoplete#util#split(string) abort
   return split(a:string, '\s*,\s*')
+endfunction
+
+function! deoplete#util#check_eskk_phase_henkan() abort
+  if !exists('b:eskk') || empty(b:eskk)
+    return 0
+  endif
+
+  let preedit = eskk#get_preedit()
+  let phase = preedit.get_henkan_phase()
+  return phase is g:eskk#preedit#PHASE_HENKAN
 endfunction

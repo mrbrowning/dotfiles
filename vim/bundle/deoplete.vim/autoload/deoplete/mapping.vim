@@ -5,20 +5,54 @@
 "=============================================================================
 
 function! deoplete#mapping#_init() abort
-  inoremap <silent> <Plug>_
-        \ <C-r>=deoplete#mapping#_complete()<CR>
+  " Note: The dummy function is needed for cpoptions bug in neovim
+  inoremap <expr><silent> <Plug>_
+        \ deoplete#mapping#_dummy('deoplete#mapping#_complete')
+  inoremap <expr><silent> <Plug>+
+        \ deoplete#mapping#_dummy('deoplete#mapping#_prev_complete')
 endfunction
-
-function! deoplete#mapping#_completefunc(findstart, base) abort
-  if a:findstart
-    return g:deoplete#_context.complete_position
-  else
-    return g:deoplete#_context.candidates
+function! deoplete#mapping#_dummy(func) abort
+  return "\<C-r>=".a:func."()\<CR>"
+endfunction
+function! s:check_completion_info(candidates) abort
+  if !exists('*complete_info')
+    return 0
   endif
+
+  let info = complete_info()
+  let noinsert = &completeopt =~# 'noinsert'
+  if (info.mode !=# '' && info.mode !=# 'eval')
+        \ || (noinsert && info.selected > 0)
+        \ || (!noinsert && info.selected >= 0)
+    return 1
+  endif
+
+  let input = getline('.')[: g:deoplete#_context.complete_position - 1]
+  if deoplete#util#check_eskk_phase_henkan()
+        \ && matchstr(input, '.$') =~# '[\u3040-\u304A]$'
+    return 0
+  endif
+
+  let old_candidates = sort(map(copy(info.items), 'v:val.word'))
+  return sort(map(copy(a:candidates), 'v:val.word')) ==# old_candidates
 endfunction
 function! deoplete#mapping#_complete() abort
+  if s:check_completion_info(g:deoplete#_context.candidates)
+    return ''
+  endif
+
   call complete(g:deoplete#_context.complete_position + 1,
         \ g:deoplete#_context.candidates)
+
+  return ''
+endfunction
+function! deoplete#mapping#_prev_complete() abort
+  if s:check_completion_info(g:deoplete#_filtered_prev.candidates)
+    return ''
+  endif
+
+  call complete(g:deoplete#_filtered_prev.complete_position + 1,
+        \ g:deoplete#_filtered_prev.candidates)
 
   return ''
 endfunction
@@ -43,10 +77,13 @@ endfunction
 function! deoplete#mapping#_rpcrequest_wrapper(sources) abort
   return deoplete#util#rpcnotify(
         \ 'deoplete_manual_completion_begin',
-        \ deoplete#init#_context('Manual', a:sources))
+        \ {
+        \  'event': 'Manual',
+        \  'sources': deoplete#util#convert2list(a:sources)
+        \ })
 endfunction
 function! deoplete#mapping#_undo_completion() abort
-  if !exists('v:completed_item') || empty(v:completed_item)
+  if empty(v:completed_item)
     return ''
   endif
 
@@ -56,8 +93,7 @@ function! deoplete#mapping#_undo_completion() abort
     return ''
   endif
 
-  return deoplete#smart_close_popup() .
-        \  repeat("\<C-h>", strchars(v:completed_item.word))
+  return repeat("\<C-h>", strchars(v:completed_item.word))
 endfunction
 function! deoplete#mapping#_complete_common_string() abort
   if !deoplete#is_enabled()
@@ -65,16 +101,16 @@ function! deoplete#mapping#_complete_common_string() abort
   endif
 
   " Get cursor word.
-  let complete_str = matchstr(deoplete#util#get_input(''), '\w*$')
-
-  if complete_str ==# '' || !has_key(g:deoplete#_context, 'candidates')
+  let prev = g:deoplete#_prev_completion
+  if empty(prev)
     return ''
   endif
 
-  let candidates = filter(copy(g:deoplete#_context.candidates),
+  let complete_str = prev.input[prev.complete_position :]
+  let candidates = filter(copy(prev.candidates),
         \ 'stridx(tolower(v:val.word), tolower(complete_str)) == 0')
 
-  if empty(candidates)
+  if empty(candidates) || complete_str ==# ''
     return ''
   endif
 
@@ -91,4 +127,17 @@ function! deoplete#mapping#_complete_common_string() abort
 
   return (pumvisible() ? "\<C-e>" : '')
         \ . repeat("\<BS>", strchars(complete_str)) . common_str
+endfunction
+function! deoplete#mapping#_insert_candidate(number) abort
+  let prev = g:deoplete#_prev_completion
+  let candidates = get(prev, 'candidates', [])
+  let word = get(candidates, a:number, {'word': ''}).word
+  if word ==# ''
+    return ''
+  endif
+
+  " Get cursor word.
+  let complete_str = prev.input[prev.complete_position :]
+  return (pumvisible() ? "\<C-e>" : '')
+        \ . repeat("\<BS>", strchars(complete_str)) . word
 endfunction

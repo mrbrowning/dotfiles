@@ -4,35 +4,28 @@
 " License: MIT license
 "=============================================================================
 
-if !exists('s:is_enabled')
-  let s:is_enabled = 0
+if !exists('s:is_handler_enabled')
+  let s:is_handler_enabled = 0
 endif
 
-let s:is_windows = ((has('win32') || has('win64')) ? v:true : v:false)
-
-function! deoplete#init#_is_enabled() abort
-  return s:is_enabled
+function! deoplete#init#_is_handler_enabled() abort
+  return s:is_handler_enabled
 endfunction
 
 function! deoplete#init#_initialize() abort
-  if has('vim_starting')
-    augroup deoplete
-      autocmd!
-      autocmd VimEnter * call deoplete#enable()
-    augroup END
+  if exists('g:deoplete#_initialized')
     return 1
   endif
 
-  if !deoplete#init#_check_channel()
-    return 1
-  endif
+  let g:deoplete#_initialized = v:false
 
-  augroup deoplete
-    autocmd!
-  augroup END
+  call deoplete#init#_custom_variables()
+  call deoplete#custom#_update_cache()
 
   call s:init_internal_variables()
-  call deoplete#init#_custom_variables()
+
+  " For context_filetype check
+  silent! call context_filetype#get()
 
   if deoplete#init#_channel()
     return 1
@@ -51,6 +44,14 @@ function! deoplete#init#_channel() abort
           \ string(python3) . ' is not executable.')
     call deoplete#util#print_error(
           \ 'You need to set g:python3_host_prog.')
+  endif
+  if has('nvim') && !has('nvim-0.3.0')
+    call deoplete#util#print_error('deoplete requires nvim 0.3.0+.')
+    return 1
+  endif
+  if !has('nvim') && v:version < 800
+    call deoplete#util#print_error('deoplete requires Vim 8.0+.')
+    return 1
   endif
 
   try
@@ -74,6 +75,10 @@ function! deoplete#init#_channel() abort
             \ 'deoplete requires Python3 support("+python3").')
     endif
 
+    if !deoplete#init#_python_version_check()
+      call deoplete#util#print_error('deoplete requires Python3.6.1+.')
+    endif
+
     if deoplete#util#has_yarp()
       echomsg string(expand('<sfile>'))
       if !exists('*yarp#py3')
@@ -90,28 +95,25 @@ function! deoplete#init#_channel() abort
     return 1
   endtry
 endfunction
-function! deoplete#init#_check_channel() abort
-  return !exists('g:deoplete#_initialized')
+function! deoplete#init#_channel_initialized() abort
+  return get(g:, 'deoplete#_initialized', v:false)
 endfunction
-function! deoplete#init#_enable() abort
+function! deoplete#init#_enable_handler() abort
   call deoplete#handler#_init()
-  let s:is_enabled = 1
+  let s:is_handler_enabled = 1
 endfunction
-function! deoplete#init#_disable() abort
+function! deoplete#init#_disable_handler() abort
   augroup deoplete
     autocmd!
   augroup END
-  let s:is_enabled = 0
+  let s:is_handler_enabled = 0
 endfunction
 
 function! s:init_internal_variables() abort
-  let g:deoplete#_prev_completion = {
-        \ 'complete_position': [],
-        \ 'candidates': [],
-        \ 'event': '',
-        \ }
+  call deoplete#init#_prev_completion()
+
   let g:deoplete#_context = {}
-  let g:deoplete#_rank = {}
+
   if !exists('g:deoplete#_logging')
     let g:deoplete#_logging = {}
   endif
@@ -125,9 +127,21 @@ function! s:init_internal_variables() abort
       let g:deoplete#_serveraddr = $NVIM_LISTEN_ADDRESS
     endif
   catch
-    if deoplete#util#has_yarp() && !exists('*neovim_rpc#serveraddr')
+    call deoplete#util#print_error(v:exception)
+    call deoplete#util#print_error(v:throwpoint)
+
+    if !has('python3')
       call deoplete#util#print_error(
-            \ 'deoplete requires vim-hug-neovim-rpc plugin in Vim.')
+            \ 'deoplete requires Python3 support("+python3").')
+    endif
+
+    if deoplete#util#has_yarp()
+      " Dummy call is needed to check exists()
+      call neovim_rpc#serveraddr()
+      if !exists('*neovim_rpc#serveraddr')
+        call deoplete#util#print_error(
+              \ 'deoplete requires vim-hug-neovim-rpc plugin in Vim.')
+      endif
     endif
   endtry
 endfunction
@@ -144,9 +158,6 @@ function! deoplete#init#_custom_variables() abort
   call s:check_custom_option(
         \ 'g:deoplete#camel_case',
         \ 'camel_case')
-  call s:check_custom_option(
-        \ 'g:deoplete#delimiters',
-        \ 'delimiters')
   call s:check_custom_option(
         \ 'g:deoplete#ignore_case',
         \ 'ignore_case')
@@ -199,82 +210,6 @@ function! deoplete#init#_custom_variables() abort
         \ 'functions')
 endfunction
 
-function! deoplete#init#_context(event, sources) abort
-  let input = deoplete#util#get_input(a:event)
-
-  let [filetype, filetypes, same_filetypes] =
-        \ deoplete#util#get_context_filetype(input, a:event)
-
-  let sources = deoplete#util#convert2list(a:sources)
-  if a:event !=# 'Manual' && empty(sources)
-    " Use default sources
-    let sources = deoplete#custom#_get_filetype_option(
-          \ 'sources', filetype, [])
-  endif
-
-  let keyword_patterns = join(deoplete#util#convert2list(
-        \   deoplete#custom#_get_filetype_option(
-        \   'keyword_patterns', filetype, '')), '|')
-
-  " Convert keyword pattern.
-  let pattern = deoplete#util#vimoption2python(
-        \ &l:iskeyword . (&l:lisp ? ',-' : ''))
-  let keyword_patterns = substitute(keyword_patterns,
-        \ '\\k', '\=pattern', 'g')
-
-  let event = (deoplete#util#get_prev_event() ==# 'Refresh') ?
-        \ 'Manual' : a:event
-
-  let width = winwidth(0) - col('.') + len(matchstr(input, '\w*$'))
-  let max_width = (width * 2 / 3)
-
-  if a:event ==# 'BufNew'
-    let bufnr = expand('<abuf>')
-  else
-    let bufnr = bufnr('%')
-  endif
-  let bufname = bufname(bufnr)
-  let bufpath = fnamemodify(bufname, ':p')
-  if !filereadable(bufpath) || getbufvar(bufnr, '&buftype') =~# 'nofile'
-    let bufpath = ''
-  endif
-
-  return {
-        \ 'changedtick': b:changedtick,
-        \ 'event': event,
-        \ 'input': input,
-        \ 'is_windows': s:is_windows,
-        \ 'next_input': deoplete#util#get_next_input(a:event),
-        \ 'complete_str': '',
-        \ 'encoding': &encoding,
-        \ 'position': getpos('.'),
-        \ 'filetype': filetype,
-        \ 'filetypes': filetypes,
-        \ 'same_filetypes': same_filetypes,
-        \ 'ignorecase': deoplete#custom#_get_option('ignore_case'),
-        \ 'smartcase': deoplete#custom#_get_option('smart_case'),
-        \ 'camelcase': deoplete#custom#_get_option('camel_case'),
-        \ 'delay': deoplete#custom#_get_option('auto_complete_delay'),
-        \ 'sources': sources,
-        \ 'keyword_patterns': keyword_patterns,
-        \ 'max_abbr_width': max_width,
-        \ 'max_kind_width': max_width,
-        \ 'max_menu_width': max_width,
-        \ 'runtimepath': &runtimepath,
-        \ 'bufnr': bufnr,
-        \ 'bufname': bufname,
-        \ 'bufpath': bufpath,
-        \ 'cwd': getcwd(),
-        \ 'vars': filter(copy(g:),
-        \       "stridx(v:key, 'deoplete#') == 0
-        \        && v:key !=# 'deoplete#_yarp'"),
-        \ 'bufvars': filter(copy(b:), "stridx(v:key, 'deoplete_') == 0"),
-        \ 'custom': deoplete#custom#_get(),
-        \ 'omni__omnifunc': &l:omnifunc,
-        \ 'dict__dictionary': &l:dictionary,
-        \ }
-endfunction
-
 function! s:check_custom_var(source_name, old_var, new_var) abort
   if exists(a:old_var)
     call deoplete#custom#var(a:source_name, a:new_var, eval(a:old_var))
@@ -290,28 +225,49 @@ function! deoplete#init#_option() abort
   " Note: HTML omni func use search().
   return {
         \ 'auto_complete': v:true,
-        \ 'auto_complete_delay': 50,
-        \ 'auto_refresh_delay': 50,
+        \ 'auto_complete_delay': 0,
+        \ 'auto_refresh_delay': 100,
         \ 'camel_case': v:false,
-        \ 'complete_method': 'complete',
-        \ 'delimiters': ['/'],
+        \ 'check_stderr': v:true,
         \ 'ignore_case': &ignorecase,
         \ 'ignore_sources': {},
+        \ 'candidate_marks': [],
         \ 'max_list': 500,
-        \ 'num_processes': s:is_windows ? 1 : 4,
+        \ 'num_processes': 4,
         \ 'keyword_patterns': {'_': '[a-zA-Z_]\k*'},
-        \ 'omni_patterns': {
-        \  'html': ['<', '</', '<[^>]*\s[[:alnum:]-]*'],
-        \  'xhtml': ['<', '</', '<[^>]*\s[[:alnum:]-]*'],
-        \  'xml': ['<', '</', '<[^>]*\s[[:alnum:]-]*'],
-        \ },
+        \ 'omni_patterns': {},
         \ 'on_insert_enter': v:true,
+        \ 'on_text_changed_i': v:true,
         \ 'profile': v:false,
+        \ 'prev_completion_mode': '',
         \ 'min_pattern_length': 2,
-        \ 'refresh_always': v:false,
+        \ 'refresh_always': v:true,
         \ 'skip_chars': ['(', ')'],
+        \ 'skip_multibyte': v:false,
         \ 'smart_case': &smartcase,
         \ 'sources': {},
+        \ 'trigger_key': v:char,
         \ 'yarp': v:false,
         \ }
+endfunction
+function! deoplete#init#_prev_completion() abort
+  let g:deoplete#_prev_completion = {
+        \ 'event': '',
+        \ 'input': '',
+        \ 'linenr': -1,
+        \ 'candidates': [],
+        \ 'complete_position': -1,
+        \ }
+endfunction
+
+function! deoplete#init#_python_version_check() abort
+  python3 << EOF
+import vim
+import sys
+vim.vars['deoplete#_python_version_check'] = (
+    sys.version_info.major,
+    sys.version_info.minor,
+    sys.version_info.micro) < (3, 6, 1)
+EOF
+  return get(g:, 'deoplete#_python_version_check', 0)
 endfunction
