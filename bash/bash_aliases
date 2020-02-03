@@ -1,6 +1,5 @@
 if [ "$(uname -s)" == "Darwin" ] ; then
     alias ls="ls -G"
-    alias emacs="/Applications/Emacs.app/Contents/MacOS/Emacs -nw"
     alias vim="vi"
 else
     alias ls="ls --color=auto"
