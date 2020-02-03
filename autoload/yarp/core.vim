@@ -28,26 +28,36 @@ else
     let s:serveraddr = get(g:, 'yarp_serveraddr', 'neovim_rpc#serveraddr')
 endif
 
-func! yarp#core#new()
+func! yarp#core#new(rp)
     let s:id = s:id + 1
 
-    let rp = {}
-
+    let rp = a:rp
     let rp.jobstart = function('yarp#core#jobstart')
     func rp.error(msg) dict
         call yarp#core#error(self.module, a:msg)
     endfunc
+    func rp.warn(msg) dict
+        call yarp#core#warn(self.module, a:msg)
+    endfunc
     let rp.call = function('yarp#core#request')
     let rp.request = function('yarp#core#request')
     let rp.notify = function('yarp#core#notify')
+    let rp.try_notify = function('yarp#core#try_notify')
     let rp.wait_channel = function('yarp#core#wait_channel')
     let rp.id = s:id
     let rp.job_is_dead = 0
     let s:reg[rp.id] = rp
 
+    " options
+    let rp.on_load = get(rp, 'on_load', function('yarp#core#_nop'))
+    let rp.job_detach = get(rp, 'job_detach', 0)
+
     " reserved for user
-    let rp.extra = {}
+    let rp.user_data = get(rp, 'user_data', {})
     return rp
+endfunc
+
+func! yarp#core#_nop(...) dict
 endfunc
 
 func! yarp#core#on_stderr(chan_id, data, event) dict
@@ -58,13 +68,24 @@ endfunc
 func! yarp#core#on_exit(chan_id, data, event) dict
     let mod = self.self
     let mod.job_is_dead = 1
-    if v:dying == 0 && s:leaving == 0
-        call mod.error("Job is dead. cmd=" . string(mod.cmd))
+    if has_key(mod, 'channel')
+        unlet mod.channel
     endif
+
+    if has("nvim")
+        if v:exiting is 0
+            return
+        endif
+    elseif v:dying || s:leaving
+        return
+    endif
+    call mod.error("Job is dead. cmd=" . string(mod.cmd))
 endfunc
 
 func! yarp#core#channel_started(id, channel)
-    let s:reg[a:id].channel = a:channel
+    let rp = s:reg[a:id]
+    let rp.channel = a:channel
+    call call(rp.on_load, [], rp)
 endfunc
 
 func! yarp#core#request(method, ...) dict
@@ -75,6 +96,26 @@ endfunc
 func! yarp#core#notify(method, ...) dict
     call self.wait_channel()
     call call(s:rpcnotify, [self.channel, a:method] + a:000)
+endfunc
+
+func! yarp#core#try_notify(method, ...) dict
+    call self.jobstart()
+    if get(self, 'job_is_dead', 0)
+        call self.error('try_notify ' . a:method . ' failed, job is dead')
+        return 0
+    endif
+    if !has_key(self, 'channel')
+        " not yet started
+        return 0
+    endif
+    let args = [self.channel, a:method] + a:000
+    try
+        call call(s:rpcnotify, args)
+        return 1
+    catch
+        call self.error('try_notify ' . s:rpcnotify . ' ' . a:method . ' failed: ' . v:exception . ', ' . string(args))
+        return 0
+    endtry
 endfunc
 
 func! yarp#core#wait_channel() dict
@@ -115,6 +156,7 @@ func! yarp#core#jobstart() dict
     endif
     let opts = {'on_stderr': function('yarp#core#on_stderr'),
             \ 'on_exit': function('yarp#core#on_exit'),
+            \ 'detach': self.job_detach,
             \ 'self': self}
     try
         let self.job = call(s:jobstart, [self.cmd, opts])
@@ -142,6 +184,23 @@ func! yarp#core#error(mod, msg)
         let lines = a:msg
     endif
     echoh ErrorMsg
+    for line in lines
+        echom '[' . a:mod . '@yarp] ' . line
+    endfor
+    echoh None
+endfunc
+
+func! yarp#core#warn(mod, msg)
+    if mode() == 'i'
+        " NOTE: side effect, sorry, but this is necessary
+        set nosmd
+    endif
+    if type(a:msg) == type("")
+        let lines = split(a:msg, "\n", 1)
+    else
+        let lines = a:msg
+    endif
+    echoh WarningMsg
     for line in lines
         echom '[' . a:mod . '@yarp] ' . line
     endfor

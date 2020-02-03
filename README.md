@@ -11,8 +11,13 @@ This is my attempt on writing a remote plugin framework without
   - [roxma/vim-hug-neovim-rpc](https://github.com/roxma/vim-hug-neovim-rpc)
   - `g:python3_host_prog` pointed to your python3 executable, or `echo
       exepath('python3')` is not empty.
-  - [neovim python client](https://github.com/neovim/python-client) (`pip3
-      install neovim`)
+  - [pynvim](https://github.com/neovim/pynvim) (`pip3
+      install pynvim`)
+
+## Use case
+
+- [shougo/deoplete.nvim](https://github.com/shougo/deoplete.nvim)
+- [ncm2/ncm2](https://github.com/ncm2/ncm2) and most of its plugins
 
 ## Usage
 
@@ -49,6 +54,35 @@ let $NVIM_PYTHON_LOG_FILE="/tmp/nvim_log"
 let $NVIM_PYTHON_LOG_LEVEL="DEBUG"
 ```
 
+## Options
+
+`let s:yarp.on_load = function('your_handler')`
+
+A handler that is called after your python module is loaded. It is not
+considered ready for request or notification from vimscript during loading
+stage. `s:yarp.request` and `s:yarp.notify` internally wait until `on_load`
+before sending actual request and notification.
+
+## Methods
+
+`call s:yarp.reqeust({event}, [, {args}...])`
+
+Similiar to `:help rpcrequest`. It sends a request to the rpc channel and
+returns the result of your python method.
+
+`call s:yarp.rpcnotify({event}, [, {args}...])`
+
+Similiar to `:help rpcnotify`. It sends a notification to the rpc channel and
+returns immediately.
+
+`call s:yarp.error(msg)`
+
+Print error message.
+
+`call s:yarp.warn(msg)`
+
+Print warning message.
+
 ## Example for existing neovim rplugin porting to Vim 8
 
 More realistic examples could be found at
@@ -63,15 +97,15 @@ Bar()`.
 
 ```python
 # rplugin/python3/foo.py
-import neovim
+import pynvim
 
-@neovim.plugin
+@pynvim.plugin
 class Foo(object):
 
     def __init__(self, vim):
         self._vim = vim
 
-    @neovim.function("Bar", sync=True)
+    @pynvim.function("Bar", sync=True)
     def bar(self, args):
         return 'hello' + str(args)
 ```
