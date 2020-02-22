@@ -72,3 +72,6 @@ nnoremap <silent><C-]> :vsp<CR><C-]>
 " Toggle comments
 nmap <silent><C-\> gcgc
 vmap <silent><C-\> gc
+
+" Toggle line number
+cmap ln set number!
