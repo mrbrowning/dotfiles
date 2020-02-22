@@ -68,3 +68,7 @@ nmap <silent><C-p> :set paste<CR>m`O<Esc>``:set nopaste<CR>
 
 " Go to tag definition in a vertical tab.
 nnoremap <silent><C-]> :vsp<CR><C-]>
+
+" Toggle comments
+nmap <silent><C-\> gcgc
+vmap <silent><C-\> gc
