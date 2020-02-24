@@ -3,6 +3,7 @@ export GOBIN=$GOPATH/bin
 export GO111MODULE=on
 
 export PATH=~/bin:$GOBIN:$PATH
+export PATH=~/.cabal/bin:$PATH
 
 if [ -t 0 ] ; then
 	. ~/.bashrc
